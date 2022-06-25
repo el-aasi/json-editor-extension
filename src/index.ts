@@ -8,16 +8,9 @@ import {
 } from '@jupyterlab/apputils';
 import {
   Widget
-} from '@lumino/widgets'
-
-interface APODResponse {
-  copyright: string;
-  date: string;
-  explanation: string;
-  media_type: 'video' | 'image';
-  title: string;
-  url: string;
-};
+} from '@lumino/widgets';
+import JSONEditor from "jsoneditor";
+import 'jsoneditor/dist/jsoneditor.css'
 
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'jupyter_lab_test:plugin',
@@ -27,41 +20,34 @@ const plugin: JupyterFrontEndPlugin<void> = {
     console.log('JupyterLab extension jupyter_lab_test is activated!');
     
     const content = new Widget();
-    content.addClass("my-apodWidget")
-    
     const widget = new MainAreaWidget({content});
     widget.id = 'apod-jupyterlab'; 
     widget.title.label = 'Astronomy Picture';
     widget.title.closable = true; 
 
-    let img = document.createElement('img');
-    content.node.appendChild(img);
+    let container = document.createElement('div')
+    container.setAttribute("id", "jsoneditor")
 
-    let summary = document.createElement('p');
-    content.node.appendChild(summary);
+    const options = {};
+    const editor = new JSONEditor(container, options);
 
-    const response = await fetch(`https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date=${randomDate()}`);
-    if (!response.ok) {
-      const data = await response.json();
-      if (data.error) {
-        summary.innerText = data.error.message;
-      } else {
-        summary.innerText = response.statusText;
-      }
-    } else {
-      const data = await response.json() as APODResponse;
-      if (data.media_type === 'image') {
-        // Populate the image
-        img.src = data.url;
-        img.title = data.title;
-        summary.innerText = data.title;
-        if (data.copyright) {
-          summary.innerText += ` (Copyright ${data.copyright})`;
-        }
-      } else {
-        summary.innerText = 'Random APOD fetched was not an image.';
-      }
+    // set json
+    const initialJson = {
+        "Array": [1, 2, 3],
+        "Boolean": true,
+        "Null": null,
+        "Number": 123,
+        "Object": {"a": "b", "c": "d"},
+        "String": "Hello World"
     }
+    editor.set(initialJson)
+
+    // get json
+    //const updatedJson = editor.get()
+
+    content.node.appendChild(container)
+
+
     const command: string = 'adop:open';
     app.commands.addCommand(command, {
       label: 'Random Astronomy Picture',
@@ -78,11 +64,5 @@ const plugin: JupyterFrontEndPlugin<void> = {
   }
 };
 
-function randomDate() {
-  const start = new Date(2010, 1, 1);
-  const end = new Date();
-  const randomDate = new Date(start.getTime() + Math.random()*(end.getTime() - start.getTime()));
-  return randomDate.toISOString().slice(0, 10);
-}
 
 export default plugin;
